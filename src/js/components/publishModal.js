@@ -231,6 +231,11 @@ export class PublishModalComponent {
   }
 
   open(existingArticle = null) {
+    if (!firebaseService.isAdmin()) {
+      alert('Access Restricted: Only the administrator can write and publish articles. Please sign in with admin credentials.');
+      return;
+    }
+
     if (!this.modalEl) this.injectModalHtml();
 
     const currentUser = firebaseService.getCurrentUser();
@@ -275,6 +280,11 @@ export class PublishModalComponent {
   }
 
   handleSubmit() {
+    if (!firebaseService.isAdmin()) {
+      alert('Access Restricted: Only the administrator can write and publish articles.');
+      return;
+    }
+
     const headline = this.modalEl.querySelector('#pub-headline').value.trim();
     const byline = this.modalEl.querySelector('#pub-byline').value.trim() || "What's Going On Editorial";
     const dateline = this.modalEl.querySelector('#pub-dateline').value;

@@ -35,7 +35,7 @@ export class HeaderComponent {
             <div class="live-time-display">
               <span id="current-clock-date" class="topbar-chip date-chip">Loading date...</span>
               <span class="topbar-divider">|</span>
-              <button id="topbar-btn-publish" class="topbar-chip publish-chip" style="color: #10b981; font-weight: 700; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); cursor: pointer;" title="Write and publish an article">✍️ Publish Article</button>
+              <button id="topbar-btn-publish" class="topbar-chip publish-chip" style="display: none; color: #10b981; font-weight: 700; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); cursor: pointer;" title="Write and publish an article">✍️ Publish Article</button>
               <span class="topbar-divider">|</span>
               <span class="topbar-chip edition-chip">New Delhi Edition</span>
               <span class="topbar-divider">|</span>
@@ -113,8 +113,8 @@ export class HeaderComponent {
               <!-- Dynamically populated by updateUserAuthState -->
             </div>
 
-            <!-- Write & Publish Story Button -->
-            <button id="btn-open-publish-modal" class="action-btn header-publish-btn" title="Write &amp; Publish News Article">
+            <!-- Write & Publish Story Button (Admin only) -->
+            <button id="btn-open-publish-modal" class="action-btn header-publish-btn" title="Write &amp; Publish News Article" style="display: none;">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
@@ -206,7 +206,7 @@ export class HeaderComponent {
 
     if (drawerCats) {
       drawerCats.innerHTML = `
-        <div style="padding: 0 0 12px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 10px;">
+        <div id="mobile-drawer-publish-container" style="display: none; padding: 0 0 12px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 10px;">
           <button id="btn-mobile-drawer-publish-cta" class="mobile-drawer-publish-cta">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M12 20h9"></path>
@@ -360,10 +360,43 @@ export class HeaderComponent {
     const headerContainer = document.getElementById('header-auth-container');
     const topbarPill = document.getElementById('topbar-auth-pill');
     const publishBtn = document.getElementById('btn-open-publish-modal');
+    const isAdmin = user && (user.role === 'admin' || (user.email && user.email.toLowerCase() === 'dhananjaysaini2006@gmail.com'));
 
-    // Publish Story button available for all contributors & readers
+    // RESTRICTED: Only the admin can see the publish option when logged in with email and password
     if (publishBtn) {
-      publishBtn.style.display = 'inline-flex';
+      if (isAdmin) {
+        publishBtn.classList.add('is-admin');
+        publishBtn.style.setProperty('display', 'inline-flex', 'important');
+      } else {
+        publishBtn.classList.remove('is-admin');
+        publishBtn.style.setProperty('display', 'none', 'important');
+      }
+    }
+
+    const topbarPublish = document.getElementById('topbar-btn-publish');
+    if (topbarPublish) {
+      topbarPublish.style.setProperty('display', isAdmin ? 'inline-flex' : 'none', 'important');
+    }
+
+    const drawerPublishContainer = document.getElementById('mobile-drawer-publish-container');
+    if (drawerPublishContainer) {
+      drawerPublishContainer.style.setProperty('display', isAdmin ? 'block' : 'none', 'important');
+    }
+
+    const navPublish = document.getElementById('nav-btn-publish');
+    if (navPublish) {
+      if (isAdmin) {
+        navPublish.classList.add('is-admin');
+        navPublish.style.setProperty('display', 'inline-flex', 'important');
+      } else {
+        navPublish.classList.remove('is-admin');
+        navPublish.style.setProperty('display', 'none', 'important');
+      }
+    }
+
+    const footerPublish = document.getElementById('footer-publish-item');
+    if (footerPublish) {
+      footerPublish.style.setProperty('display', isAdmin ? 'block' : 'none', 'important');
     }
 
     if (!user) {

@@ -116,9 +116,18 @@ class NewsApp {
     );
     this.header.init();
 
-    // Listen to Firebase Auth state
+    // Listen to Firebase Auth state (only admin sees publish options)
     firebaseService.onAuthStateChanged((user) => {
       this.header.updateUserAuthState(user);
+      const isAdmin = firebaseService.isAdmin();
+      const navPublish = document.getElementById('nav-btn-publish');
+      if (navPublish) {
+        navPublish.style.display = isAdmin ? 'inline-flex' : 'none';
+      }
+      const footerPublish = document.getElementById('footer-publish-item');
+      if (footerPublish) {
+        footerPublish.style.display = isAdmin ? 'block' : 'none';
+      }
     });
 
     // Check breaking alert on load
@@ -201,8 +210,9 @@ class NewsApp {
         </button>
       `).join('');
 
+      const isAdmin = firebaseService.isAdmin();
       const publishTabHtml = `
-        <button class="cat-tab cat-tab-publish" id="nav-btn-publish" title="Write and publish your own article live">
+        <button class="cat-tab cat-tab-publish" id="nav-btn-publish" title="Write and publish an article live" style="${isAdmin ? 'display: inline-flex;' : 'display: none;'}">
           ✍️ Publish Article
         </button>
       `;
