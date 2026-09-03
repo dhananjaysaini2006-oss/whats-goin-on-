@@ -61,18 +61,18 @@ class RssService {
 
     let allArticles = [];
 
-    // If live articles returned from network, use them primarily
+    // If live articles returned from network, use them exclusively without mixing stale fallback items
     if (liveArticles.length > 0) {
-      // Sort live articles strictly by real publish date descending
-      liveArticles.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
-      
-      // Append initial articles with older fallback timestamps so they don't override live news
-      const olderFallbackArticles = INITIAL_FEATURED_ARTICLES.map((art, idx) => ({
-        ...art,
-        pubDate: new Date(Date.now() - 1000 * 60 * 60 * 24 - (idx * 1000 * 60 * 60)).toISOString()
-      }));
+      // Filter out stale articles older than 48 hours to ensure only fresh breaking news
+      const cutoffMs = Date.now() - (48 * 60 * 60 * 1000);
+      const freshLive = liveArticles.filter(art => {
+        const t = new Date(art.pubDate).getTime();
+        return !isNaN(t) && t >= cutoffMs;
+      });
 
-      allArticles = [...liveArticles, ...olderFallbackArticles];
+      const selected = freshLive.length >= 10 ? freshLive : liveArticles;
+      selected.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+      allArticles = selected;
     } else {
       console.info('Using curated authentic news wire feed (offline mode)');
       allArticles = [...INITIAL_FEATURED_ARTICLES];
@@ -225,6 +225,20 @@ class RssService {
       console.warn('XML Parse Error for source', source.name, err);
       return [];
     }
+  }
+
+  /**
+   * Safely parses RSS date strings into valid ISO timestamps
+   */
+  parseDateSafe(dateString) {
+    if (!dateString) return new Date().toISOString();
+    try {
+      const d = new Date(dateString);
+      if (!isNaN(d.getTime())) {
+        return d.toISOString();
+      }
+    } catch (e) {}
+    return new Date().toISOString();
   }
 
   /**

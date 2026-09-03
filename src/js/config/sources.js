@@ -213,7 +213,7 @@ export const SOURCE_REGISTRY = [
     name: 'BBC World News',
     category: CATEGORIES.WORLD,
     region: 'global',
-    rssUrl: 'http://feeds.bbci.co.uk/news/world/rss.xml',
+    rssUrl: 'https://feeds.bbci.co.uk/news/world/rss.xml',
     color: '#bb1919'
   },
   {
@@ -237,7 +237,7 @@ export const SOURCE_REGISTRY = [
     name: 'CNN International',
     category: CATEGORIES.WORLD,
     region: 'global',
-    rssUrl: 'http://rss.cnn.com/rss/edition.rss',
+    rssUrl: 'https://news.google.com/rss/search?q=source:%22CNN%22&hl=en-US&gl=US&ceid=US:en',
     color: '#cc0000'
   },
   {
