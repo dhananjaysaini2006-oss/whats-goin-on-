@@ -26,6 +26,10 @@ export class ArticleModalComponent {
 
   open(article) {
     this.currentArticle = article;
+    this.previousTitle = document.title;
+    if (article.title) {
+      document.title = `${article.title} — WHAT'S GOING ON`;
+    }
     cacheService.markAsRead(article.id);
 
     const modalOverlay = document.getElementById('article-reader-modal');
@@ -197,6 +201,9 @@ export class ArticleModalComponent {
   }
 
   close() {
+    if (this.previousTitle) {
+      document.title = this.previousTitle;
+    }
     const modalOverlay = document.getElementById('article-reader-modal');
     if (modalOverlay) {
       modalOverlay.classList.remove('active');

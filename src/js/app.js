@@ -41,6 +41,16 @@ class NewsApp {
     this.applyTheme(cacheService.getTheme());
     this.initComponents();
     this.renderCategoryNavigation();
+
+    // Support URL hash routing for SEO deep-links (e.g. #india-politics, #world, #business)
+    const initialHash = window.location.hash.replace('#', '');
+    if (initialHash && Object.values(CATEGORIES).includes(initialHash)) {
+      this.currentCategory = initialHash;
+      const tabs = document.querySelectorAll('.cat-tab');
+      tabs.forEach(tab => {
+        tab.classList.toggle('active', tab.getAttribute('data-category') === initialHash);
+      });
+    }
     
     // Initial fetch
     await this.fetchNews(false);
@@ -257,6 +267,28 @@ class NewsApp {
     this.searchQuery = '';
     const searchInput = document.getElementById('global-search-input');
     if (searchInput) searchInput.value = '';
+
+    // Update dynamic document title & canonical hash for SEO
+    const catTitles = {
+      [CATEGORIES.ALL]: "WHAT'S GOING ON — Live Breaking News & Intelligence Portal | wahtgoinon.online",
+      [CATEGORIES.INDIA_POLITICS]: "Indian Politics & Governance — Live News Wire | wahtgoinon.online",
+      [CATEGORIES.INDIA]: "India National Media Wires — Real-Time Headlines | wahtgoinon.online",
+      [CATEGORIES.WORLD]: "Global News & International Affairs Wire | wahtgoinon.online",
+      [CATEGORIES.BUSINESS]: "Markets, Economy & Financial Intelligence | wahtgoinon.online",
+      [CATEGORIES.CURRENT_AFFAIRS]: "Daily Current Affairs & UPSC Intelligence Hub | wahtgoinon.online",
+      [CATEGORIES.TECH]: "Technology, AI & Emerging Tech Wire | wahtgoinon.online",
+      [CATEGORIES.SCIENCE]: "Science, Space & Innovation News | wahtgoinon.online",
+      [CATEGORIES.SAVED]: "Saved Articles & Reading List | wahtgoinon.online"
+    };
+    if (catTitles[categoryId]) {
+      document.title = catTitles[categoryId];
+    }
+
+    try {
+      if (window.location.hash !== `#${categoryId}`) {
+        window.history.replaceState(null, '', `#${categoryId}`);
+      }
+    } catch (e) {}
 
     // Update nav active class
     const tabs = document.querySelectorAll('.cat-tab');

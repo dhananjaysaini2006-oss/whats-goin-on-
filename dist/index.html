@@ -3,23 +3,125 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WHAT'S GOING ON — Premium Real-Time News & Intelligence Portal</title>
+  <title>WHAT'S GOING ON — Live Breaking News & Intelligence Portal | wahtgoinon.online</title>
   
-  <meta name="description" content="What's Going On is a minimalist, ultra-fast news intelligence portal aggregating real-time updates from Google News, Indian media houses, and international publications with 3-minute auto-refresh and dedicated Current Affairs." />
-  <meta name="keywords" content="What's Going On, News Portal, Google News, India News, The Hindu, NDTV, Times of India, BBC, Reuters, Current Affairs, 3 minute auto update, UPSC Current Affairs" />
+  <!-- Primary SEO Meta Tags -->
+  <meta name="description" content="What's Going On (wahtgoinon.online) is a real-time news intelligence portal aggregating live updates every 3 minutes from The Hindu, ThePrint, The Wire, Livemint, NDTV, BBC, NYT, and Google News." />
+  <meta name="keywords" content="wahtgoinon.online, whats going on, live news, breaking news, India politics, The Hindu, ThePrint, Livewire, Livemint, New York Times, current affairs, UPSC news, market intelligence, 3-minute news sync" />
+  <meta name="author" content="WHAT'S GOING ON Editorial" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
   <meta name="theme-color" content="#07090e" />
+  <meta name="rating" content="General" />
+  <meta name="revisit-after" content="1 days" />
+  <meta name="language" content="English" />
 
-  <!-- Open Graph / Social Sharing -->
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://wahtgoinon.online/" />
+
+  <!-- Preconnect & DNS-Prefetch for Core Web Vitals -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://images.unsplash.com" />
+  <link rel="dns-prefetch" href="https://news.google.com" />
+
+  <!-- Open Graph / Facebook / WhatsApp / LinkedIn -->
+  <meta property="og:site_name" content="WHAT'S GOING ON" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="WHAT'S GOING ON — Global News & Current Affairs Hub" />
-  <meta property="og:description" content="Live synchronized news portal updating every 3 minutes across Google News, India Media, and Global publications." />
+  <meta property="og:url" content="https://wahtgoinon.online/" />
+  <meta property="og:title" content="WHAT'S GOING ON — Live Breaking News & Intelligence Portal" />
+  <meta property="og:description" content="High-velocity live news intelligence aggregating The Hindu, ThePrint, The Wire, Livemint, NYT, BBC & Google News. Synchronized every 3 minutes." />
+  <meta property="og:image" content="https://wahtgoinon.online/og-image.svg" />
+  <meta property="og:image:type" content="image/svg+xml" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="WHAT'S GOING ON — Real-time News Portal" />
+  <meta property="og:locale" content="en_IN" />
 
-  <!-- Favicon -->
+  <!-- Twitter / X Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@WhatsGoingOn" />
+  <meta name="twitter:title" content="WHAT'S GOING ON — Live Breaking News & Intelligence Portal" />
+  <meta name="twitter:description" content="Real-time multi-source wire aggregator updating every 3 minutes across Indian & Global publications." />
+  <meta name="twitter:image" content="https://wahtgoinon.online/og-image.svg" />
+  <meta name="twitter:image:alt" content="WHAT'S GOING ON — Live News Wire" />
+
+  <!-- Mobile Web App & PWA Manifest -->
+  <link rel="manifest" href="/site.webmanifest" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <script type="module" crossorigin src="/assets/index-D-cKxy0F.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-sVci5Qsh.css">
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+
+  <!-- Schema.org JSON-LD Structured Data (Google News & Organization) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "NewsMediaOrganization",
+        "@id": "https://wahtgoinon.online/#organization",
+        "name": "WHAT'S GOING ON",
+        "url": "https://wahtgoinon.online/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://wahtgoinon.online/favicon.svg",
+          "width": 512,
+          "height": 512
+        },
+        "description": "A high-velocity global intelligence and real-time news aggregator synchronizing multi-source wire feeds every 3 minutes.",
+        "publishingPrinciples": "https://wahtgoinon.online/#about",
+        "sameAs": [
+          "https://github.com/dhananjaysaini2006-oss/whats-goin-on-"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://wahtgoinon.online/#website",
+        "url": "https://wahtgoinon.online/",
+        "name": "WHAT'S GOING ON",
+        "description": "Live breaking news and global intelligence portal",
+        "publisher": {
+          "@id": "https://wahtgoinon.online/#organization"
+        },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://wahtgoinon.online/?search={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        },
+        "inLanguage": "en"
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "name": ["All News", "India Politics", "National News", "World News", "Business & Economy", "Tech Wire", "Current Affairs"],
+        "url": [
+          "https://wahtgoinon.online/#all",
+          "https://wahtgoinon.online/#india-politics",
+          "https://wahtgoinon.online/#india",
+          "https://wahtgoinon.online/#world",
+          "https://wahtgoinon.online/#business",
+          "https://wahtgoinon.online/#tech",
+          "https://wahtgoinon.online/#current-affairs"
+        ]
+      }
+    ]
+  }
+  </script>
+  <script type="module" crossorigin src="/assets/index-s_RX35M9.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-B7OsVcEw.css">
 </head>
 <body>
+  <!-- SEO Semantic Landmark -->
+  <h1 class="sr-only">WHAT'S GOING ON — Live Breaking News & Global Intelligence Portal | wahtgoinon.online</h1>
+
+  <noscript>
+    <div style="padding: 24px; text-align: center; background: #0b0f19; color: #f8fafc; font-family: sans-serif;">
+      <h2>WHAT'S GOING ON — Real-Time News & Intelligence Portal</h2>
+      <p>Aggregating live news from The Hindu, ThePrint, The Wire, Livemint, NDTV, Times of India, BBC, The New York Times, and Google News.</p>
+      <p>Please enable JavaScript to experience live 3-minute auto-refresh and audio narration.</p>
+    </div>
+  </noscript>
   <!-- Hidden Global SVG Defs -->
   <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
     <defs>
