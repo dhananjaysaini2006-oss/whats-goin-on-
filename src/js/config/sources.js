@@ -86,6 +86,32 @@ export const SOURCE_REGISTRY = [
     color: '#ea580c'
   },
   {
+    id: 'livemint-latest',
+    name: 'Mint (Top News Wire)',
+    category: CATEGORIES.BUSINESS,
+    region: 'india',
+    rssUrl: 'https://www.livemint.com/rss/news',
+    color: '#ea580c'
+  },
+  {
+    id: 'theprint-india',
+    name: 'ThePrint (National & Governance)',
+    category: CATEGORIES.INDIA,
+    region: 'india',
+    rssUrl: 'https://theprint.in/category/india/feed/',
+    color: '#005a9c',
+    isPolitics: true
+  },
+  {
+    id: 'thewire-livewire',
+    name: 'The Wire / Livewire (National)',
+    category: CATEGORIES.INDIA,
+    region: 'india',
+    rssUrl: 'https://news.google.com/rss/search?q=source:%22The+Wire%22+OR+site:thewire.in+OR+site:livewire.thewire.in&hl=en-IN&gl=IN&ceid=IN:en',
+    color: '#c2410c',
+    isPolitics: true
+  },
+  {
     id: 'the-hindu-national',
     name: 'The Hindu (National & Politics)',
     category: CATEGORIES.INDIA,
@@ -192,6 +218,14 @@ export const SOURCE_REGISTRY = [
   // ==========================================
   // GLOBAL NEWS WIRES & INTERNATIONAL MEDIA
   // ==========================================
+  {
+    id: 'nyt-world',
+    name: 'The New York Times (World)',
+    category: CATEGORIES.WORLD,
+    region: 'global',
+    rssUrl: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',
+    color: '#121212'
+  },
   {
     id: 'reuters-world',
     name: 'Reuters World Wire',

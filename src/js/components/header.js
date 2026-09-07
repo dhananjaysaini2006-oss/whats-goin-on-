@@ -1,4 +1,6 @@
 import { cacheService } from '../services/cacheService.js';
+import { firebaseService } from '../services/firebaseService.js';
+
 
 export class HeaderComponent {
   constructor(onRefreshCallback, onSearchCallback, onThemeToggleCallback, onIntervalChangeCallback, onPublishClickCallback, onAuthClickCallback, onAdminClickCallback) {
@@ -501,7 +503,6 @@ export class HeaderComponent {
         const signOutBtn = headerContainer.querySelector('#btn-header-signout');
         if (signOutBtn) {
           signOutBtn.addEventListener('click', async () => {
-            const { firebaseService } = await import('../services/firebaseService.js');
             await firebaseService.signOut();
           });
         }
@@ -572,7 +573,6 @@ export class HeaderComponent {
           const ov = document.getElementById('mobile-drawer-overlay');
           if (ov) ov.style.display = 'none';
           document.body.style.overflow = '';
-          const { firebaseService } = await import('../services/firebaseService.js');
           await firebaseService.signOut();
         });
       }
