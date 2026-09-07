@@ -381,6 +381,20 @@ class NewsApp {
       // Render view
       this.renderActiveView();
 
+      // Progressively enrich any remaining placeholder images in the background
+      rssService.enrichArticlesWithImages(this.articles, (updatedArt) => {
+        const cardImgs = document.querySelectorAll(`[data-id="${updatedArt.id}"] img`);
+        cardImgs.forEach(img => {
+          img.src = updatedArt.image;
+        });
+        const leadCol = document.querySelector(`.hindu-lead-col[data-id="${updatedArt.id}"]`);
+        if (leadCol) {
+          const leadImg = leadCol.querySelector('.hindu-lead-img');
+          if (leadImg) leadImg.src = updatedArt.image;
+        }
+        cacheService.setCachedArticles(this.articles);
+      });
+
       // Update last sync time indicator in header
       if (this.header) {
         this.header.updateLastSyncTime(new Date());

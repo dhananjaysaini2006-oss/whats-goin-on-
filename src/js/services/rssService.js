@@ -118,7 +118,7 @@ class RssService {
       if (res.ok) {
         const xmlText = await res.text();
         const parsed = this.parseXmlFeed(xmlText, source);
-        if (parsed.length > 0) return parsed;
+        if (parsed.length > 0) return await this.enrichSourceArticlesWithOgImages(parsed);
       }
     } catch (e) {
       // Continue to next strategy
@@ -131,7 +131,8 @@ class RssService {
       if (res.ok) {
         const data = await res.json();
         if (data.status === 'ok' && Array.isArray(data.items) && data.items.length > 0) {
-          return this.transformRss2JsonItems(data.items, source);
+          const parsed = this.transformRss2JsonItems(data.items, source);
+          if (parsed.length > 0) return await this.enrichSourceArticlesWithOgImages(parsed);
         }
       }
     } catch (e) {
@@ -145,7 +146,7 @@ class RssService {
       if (res.ok) {
         const xmlText = await res.text();
         const parsed = this.parseXmlFeed(xmlText, source);
-        if (parsed.length > 0) return parsed;
+        if (parsed.length > 0) return await this.enrichSourceArticlesWithOgImages(parsed);
       }
     } catch (e) {
       // Continue to next strategy
@@ -159,7 +160,7 @@ class RssService {
         const json = await res.json();
         if (json.contents) {
           const parsed = this.parseXmlFeed(json.contents, source);
-          if (parsed.length > 0) return parsed;
+          if (parsed.length > 0) return await this.enrichSourceArticlesWithOgImages(parsed);
         }
       }
     } catch (e) {
@@ -199,9 +200,13 @@ class RssService {
         const isPolitics = source.isPolitics || this.isPoliticalArticle(cleanTitle, cleanSnippet);
         const category = isPolitics && source.region === 'india' ? CATEGORIES.INDIA_POLITICS : source.category;
         
-        // Extract real image from publisher RSS or match region/topic contextually
-        const rawImageUrl = this.extractImageFromXml(item, rawDesc);
-        const finalImageUrl = this.resolveContextualNewsImage(rawImageUrl, cleanTitle, cleanSnippet, source, idx);
+        const cleanLink = rawLink.trim();
+        const cachedImg = cacheService.getArticleImage(cleanLink);
+        const rawImageUrl = cachedImg || this.extractImageFromXml(item, rawDesc);
+        const hasRealImage = !!rawImageUrl;
+        const finalImageUrl = hasRealImage
+          ? rawImageUrl
+          : this.resolveContextualNewsImage(rawImageUrl, cleanTitle, cleanSnippet, source, idx);
         const richStory = this.generateSubstantiveNewsContent(cleanTitle, cleanSnippet, rawDesc, source);
 
         return {
@@ -212,8 +217,9 @@ class RssService {
           category: category,
           region: source.region,
           isPolitics: isPolitics,
-          link: rawLink,
+          link: cleanLink,
           image: finalImageUrl,
+          hasPlaceholderImage: !hasRealImage,
           pubDate: this.parseDateSafe(rawDate),
           snippet: cleanSnippet,
           content: richStory,
@@ -252,12 +258,17 @@ class RssService {
       const isPolitics = source.isPolitics || this.isPoliticalArticle(cleanTitle, cleanSnippet);
       const category = isPolitics && source.region === 'india' ? CATEGORIES.INDIA_POLITICS : source.category;
       
-      let rawImageUrl = item.thumbnail || item.enclosure?.link;
+      const itemLink = (item.link || item.guid || '').trim();
+      const cachedImg = cacheService.getArticleImage(itemLink);
+      let rawImageUrl = cachedImg || item.thumbnail || item.enclosure?.link;
       if (!rawImageUrl || rawImageUrl.includes('favicon') || rawImageUrl.includes('logo') || rawImageUrl.includes('1x1') || rawImageUrl.includes('feedburner')) {
         rawImageUrl = this.extractImageFromHtml(rawBody);
       }
 
-      const finalImageUrl = this.resolveContextualNewsImage(rawImageUrl, cleanTitle, cleanSnippet, source, idx);
+      const hasRealImage = !!rawImageUrl;
+      const finalImageUrl = hasRealImage
+        ? rawImageUrl
+        : this.resolveContextualNewsImage(rawImageUrl, cleanTitle, cleanSnippet, source, idx);
       const richStory = this.generateSubstantiveNewsContent(cleanTitle, cleanSnippet, rawBody, source);
 
       return {
@@ -268,8 +279,9 @@ class RssService {
         category: category,
         region: source.region,
         isPolitics: isPolitics,
-        link: item.link || item.guid,
+        link: itemLink,
         image: finalImageUrl,
+        hasPlaceholderImage: !hasRealImage,
         pubDate: this.parseDateSafe(item.pubDate),
         snippet: cleanSnippet,
         content: richStory,
@@ -434,6 +446,109 @@ class RssService {
       `Core Briefing: ${snippet.length > 30 ? snippet.substring(0, 140) + '...' : 'Verified wire bulletin from ' + source.name + '.'}`,
       `Verified Media Wire: Real-time update monitored on ${source.name} editorial network.`
     ];
+  }
+
+  /**
+   * Fetches the article webpage and extracts og:image / twitter:image meta tags
+   */
+  async fetchArticleOgImage(url) {
+    if (!url || !url.startsWith('http')) return null;
+
+    // Check localStorage cache first
+    const cached = cacheService.getArticleImage(url);
+    if (cached) return cached;
+
+    // Strategy 1: Local / Vercel API proxy with server-side extraction
+    try {
+      const endpoint = `/api/proxy-rss?url=${encodeURIComponent(url)}&extract=image`;
+      const res = await fetch(endpoint, { signal: AbortSignal.timeout(4000) });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.success && data.image) {
+          cacheService.setArticleImage(url, data.image);
+          return data.image;
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
+
+    // Strategy 2: AllOrigins public CORS proxy fallback
+    try {
+      const allOriginsUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      const res = await fetch(allOriginsUrl, { signal: AbortSignal.timeout(4000) });
+      if (res.ok) {
+        const json = await res.json();
+        const html = json.contents || '';
+        const match = html.match(/<meta[^>]+(?:property|name)=["'](?:og:image|og:image:url|twitter:image|twitter:image:src)["'][^>]+content=["']([^"']+)["']/i) ||
+                      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["'](?:og:image|og:image:url|twitter:image|twitter:image:src)["']/i);
+        if (match && match[1]) {
+          let cleanUrl = match[1].trim().replace(/&amp;/g, '&');
+          if (cleanUrl.startsWith('//')) cleanUrl = 'https:' + cleanUrl;
+          if (cleanUrl.startsWith('http')) {
+            cacheService.setArticleImage(url, cleanUrl);
+            return cleanUrl;
+          }
+        }
+      }
+    } catch (e) {}
+
+    return null;
+  }
+
+  /**
+   * Enriches newly parsed source articles with real og:image tags where missing
+   */
+  async enrichSourceArticlesWithOgImages(articles) {
+    if (!articles || articles.length === 0) return articles;
+
+    const needyArticles = articles.filter(a => a.hasPlaceholderImage && a.link);
+    if (needyArticles.length === 0) return articles;
+
+    // Fetch needy articles in parallel with bounded timeout
+    await Promise.allSettled(
+      needyArticles.slice(0, 10).map(async (art) => {
+        try {
+          const realImg = await this.fetchArticleOgImage(art.link);
+          if (realImg) {
+            art.image = realImg;
+            art.hasPlaceholderImage = false;
+          }
+        } catch (e) {}
+      })
+    );
+
+    return articles;
+  }
+
+  /**
+   * Progressively enriches any remaining placeholder images in the background
+   * and invokes onImageUpdated(article) so UI can update DOM cards dynamically
+   */
+  async enrichArticlesWithImages(articles, onImageUpdated) {
+    if (!articles || articles.length === 0) return;
+
+    const needy = articles.filter(a => a.hasPlaceholderImage && a.link);
+    if (needy.length === 0) return;
+
+    const batchSize = 3;
+    for (let i = 0; i < needy.length; i += batchSize) {
+      const batch = needy.slice(i, i + batchSize);
+      await Promise.allSettled(
+        batch.map(async (art) => {
+          try {
+            const img = await this.fetchArticleOgImage(art.link);
+            if (img && img !== art.image) {
+              art.image = img;
+              art.hasPlaceholderImage = false;
+              if (typeof onImageUpdated === 'function') {
+                onImageUpdated(art);
+              }
+            }
+          } catch (e) {}
+        })
+      );
+    }
   }
 }
 

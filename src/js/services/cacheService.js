@@ -4,7 +4,8 @@ const STORAGE_KEYS = {
   REFRESH_INTERVAL: 'wgo_interval_v1',
   VIEW_MODE: 'wgo_view_mode_v1',
   CACHED_ARTICLES: 'wgo_cached_articles_v1',
-  READ_HISTORY: 'wgo_read_history_v1'
+  READ_HISTORY: 'wgo_read_history_v1',
+  ARTICLE_IMAGES: 'wgo_article_images_v1'
 };
 
 class CacheService {
@@ -117,6 +118,40 @@ class CacheService {
       try {
         localStorage.setItem(STORAGE_KEYS.READ_HISTORY, JSON.stringify(this.readHistory));
       } catch (e) {}
+    }
+  }
+
+  // --- PERSISTENT ARTICLE IMAGES CACHE ---
+  getAllArticleImages() {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.ARTICLE_IMAGES);
+      return data ? JSON.parse(data) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  getArticleImage(url) {
+    if (!url) return null;
+    const images = this.getAllArticleImages();
+    return images[url] || null;
+  }
+
+  setArticleImage(url, imageUrl) {
+    if (!url || !imageUrl) return;
+    try {
+      const images = this.getAllArticleImages();
+      images[url] = imageUrl;
+      // Cap at 600 items to avoid localStorage limits
+      const keys = Object.keys(images);
+      if (keys.length > 600) {
+        for (let i = 0; i < 100; i++) {
+          delete images[keys[i]];
+        }
+      }
+      localStorage.setItem(STORAGE_KEYS.ARTICLE_IMAGES, JSON.stringify(images));
+    } catch (e) {
+      console.warn('Failed to cache article image', e);
     }
   }
 
