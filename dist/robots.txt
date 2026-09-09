@@ -17,4 +17,4 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-Sitemap: https://wahtgoinon.online/sitemap.xml
+Sitemap: https://whatgoinon.online/sitemap.xml

@@ -2,51 +2,75 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
   <url>
-    <loc>https://wahtgoinon.online/</loc>
-    <lastmod>2026-09-07</lastmod>
+    <loc>https://whatgoinon.online/</loc>
+    <lastmod>2026-09-09</lastmod>
     <changefreq>always</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://wahtgoinon.online/#india-politics</loc>
-    <lastmod>2026-09-07</lastmod>
+    <loc>https://whatgoinon.online/#india-politics</loc>
+    <lastmod>2026-09-09</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://wahtgoinon.online/#india</loc>
-    <lastmod>2026-09-07</lastmod>
+    <loc>https://whatgoinon.online/#india</loc>
+    <lastmod>2026-09-09</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://wahtgoinon.online/#world</loc>
-    <lastmod>2026-09-07</lastmod>
+    <loc>https://whatgoinon.online/#world</loc>
+    <lastmod>2026-09-09</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://wahtgoinon.online/#current-affairs</loc>
-    <lastmod>2026-09-07</lastmod>
+    <loc>https://whatgoinon.online/#current-affairs</loc>
+    <lastmod>2026-09-09</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://wahtgoinon.online/#business</loc>
-    <lastmod>2026-09-07</lastmod>
+    <loc>https://whatgoinon.online/#business</loc>
+    <lastmod>2026-09-09</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://wahtgoinon.online/#tech</loc>
-    <lastmod>2026-09-07</lastmod>
+    <loc>https://whatgoinon.online/#tech</loc>
+    <lastmod>2026-09-09</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://wahtgoinon.online/#science</loc>
-    <lastmod>2026-09-07</lastmod>
+    <loc>https://whatgoinon.online/#science</loc>
+    <lastmod>2026-09-09</lastmod>
     <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://whatgoinon.online/about.html</loc>
+    <lastmod>2026-09-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://whatgoinon.online/contact.html</loc>
+    <lastmod>2026-09-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://whatgoinon.online/privacy.html</loc>
+    <lastmod>2026-09-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://whatgoinon.online/privacy-policy.html</loc>
+    <lastmod>2026-09-09</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 </urlset>

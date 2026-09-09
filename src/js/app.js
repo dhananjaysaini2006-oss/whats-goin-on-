@@ -270,15 +270,15 @@ class NewsApp {
 
     // Update dynamic document title & canonical hash for SEO
     const catTitles = {
-      [CATEGORIES.ALL]: "WHAT'S GOING ON — Live Breaking News & Intelligence Portal | wahtgoinon.online",
-      [CATEGORIES.INDIA_POLITICS]: "Indian Politics & Governance — Live News Wire | wahtgoinon.online",
-      [CATEGORIES.INDIA]: "India National Media Wires — Real-Time Headlines | wahtgoinon.online",
-      [CATEGORIES.WORLD]: "Global News & International Affairs Wire | wahtgoinon.online",
-      [CATEGORIES.BUSINESS]: "Markets, Economy & Financial Intelligence | wahtgoinon.online",
-      [CATEGORIES.CURRENT_AFFAIRS]: "Daily Current Affairs & UPSC Intelligence Hub | wahtgoinon.online",
-      [CATEGORIES.TECH]: "Technology, AI & Emerging Tech Wire | wahtgoinon.online",
-      [CATEGORIES.SCIENCE]: "Science, Space & Innovation News | wahtgoinon.online",
-      [CATEGORIES.SAVED]: "Saved Articles & Reading List | wahtgoinon.online"
+      [CATEGORIES.ALL]: "WHAT'S GOING ON — Live Breaking News & Intelligence Portal | whatgoinon.online",
+      [CATEGORIES.INDIA_POLITICS]: "Indian Politics & Governance — Live News Wire | whatgoinon.online",
+      [CATEGORIES.INDIA]: "India National Media Wires — Real-Time Headlines | whatgoinon.online",
+      [CATEGORIES.WORLD]: "Global News & International Affairs Wire | whatgoinon.online",
+      [CATEGORIES.BUSINESS]: "Markets, Economy & Financial Intelligence | whatgoinon.online",
+      [CATEGORIES.CURRENT_AFFAIRS]: "Daily Current Affairs & UPSC Intelligence Hub | whatgoinon.online",
+      [CATEGORIES.TECH]: "Technology, AI & Emerging Tech Wire | whatgoinon.online",
+      [CATEGORIES.SCIENCE]: "Science, Space & Innovation News | whatgoinon.online",
+      [CATEGORIES.SAVED]: "Saved Articles & Reading List | whatgoinon.online"
     };
     if (catTitles[categoryId]) {
       document.title = catTitles[categoryId];

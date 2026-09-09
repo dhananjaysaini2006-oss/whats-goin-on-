@@ -276,10 +276,15 @@ export class NewsGridComponent {
                 <span style="font-size: 0.725rem; color: var(--text-muted); font-family: var(--font-mono);">${this.formatTimeAgo(art.pubDate)}</span>
               </div>
               <h4 class="hindu-wire-headline" data-action="open-article">${art.title}</h4>
+              <p class="hindu-wire-summary">${art.originalAnalysis || art.snippet}</p>
               <div class="hindu-wire-meta">
                 <span style="font-weight: 700; color: var(--accent-cyan);">${art.source}</span>
                 <span style="color: var(--text-muted);">•</span>
                 <span style="color: var(--text-muted);">${art.readTime || '2 min read'}</span>
+                <span style="color: var(--text-muted);">•</span>
+                <a href="${art.link || '#'}" target="_blank" rel="noopener noreferrer" class="hindu-wire-outbound" onclick="event.stopPropagation();" title="Read on ${art.source}">
+                  Source: ${art.source} ↗
+                </a>
               </div>
             </article>
           `).join('')}
@@ -497,6 +502,12 @@ export class NewsGridComponent {
                     <span class="badge ${art.isPolitics ? 'badge-live' : 'badge-category'}" style="font-size: 0.65rem; padding: 2px 6px;">${art.isPolitics ? 'POLITICS' : art.category}</span>
                   </div>
                   <h3 class="compact-title" data-action="open-article">${art.title}</h3>
+                  <p class="compact-snippet">${art.originalAnalysis || art.snippet}</p>
+                  <div style="display: flex; align-items: center; gap: 12px; margin-top: 4px;">
+                    <a href="${art.link || '#'}" target="_blank" rel="noopener noreferrer" class="compact-outbound-link" onclick="event.stopPropagation();" title="Read on ${art.source}">
+                      Read on ${art.source} ↗
+                    </a>
+                  </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 6px;">
                   <button class="btn-card-action ${isBookmarked ? 'bookmarked' : ''}" data-action="bookmark" title="Bookmark">

@@ -1,10 +1,22 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'path';
 
 export default defineConfig({
   server: {
     port: 5173,
     open: false,
     host: true
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        about: resolve(__dirname, 'about.html'),
+        contact: resolve(__dirname, 'contact.html'),
+        privacy: resolve(__dirname, 'privacy.html'),
+        privacyPolicy: resolve(__dirname, 'privacy-policy.html')
+      }
+    }
   },
   plugins: [
     {

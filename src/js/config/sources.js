@@ -449,8 +449,8 @@ export const INITIAL_FEATURED_ARTICLES = [
     link: 'https://www.thehindu.com',
     image: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=1200&auto=format&fit=crop&q=80',
     pubDate: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
-    snippet: 'Strategic approvals for high-impact national connectivity, semiconductor manufacturing, and public sector modernization ratified in New Delhi.',
-    content: 'In a major legislative push, the Union Cabinet in New Delhi has given statutory clearance to multiple landmark bills aimed at boosting domestic manufacturing, upgrading freight corridors, and expanding national digital infrastructure.',
+    snippet: 'The Union Cabinet has sanctioned a far-reaching legislative agenda designed to modernize inter-state freight transit, industrial manufacturing corridors, and digital civil services. This comprehensive statutory rollout aims to cut logistics overhead while creating dedicated economic clusters across several states. Economic analysts project that these measures will unlock substantial private capital investment and improve supply chain competitiveness nationwide.',
+    content: 'In a major legislative push, the Union Cabinet in New Delhi has given statutory clearance to multiple landmark bills aimed at boosting domestic manufacturing, upgrading freight corridors, and expanding national digital infrastructure.\n\nKey policy frameworks prioritized in this session establish streamlined land allocation procedures, fiscal incentives for green manufacturing clusters, and standardized digital permitting rails for industrial ventures.\n\nParliamentary leaders and department secretaries confirmed that joint standing committee hearings will commence shortly to ensure broad cross-state consensus ahead of floor voting.',
     keyPoints: [
       'Multi-crore capital investment approved for strategic highway and freight corridors.',
       'Sovereign incentives for domestic high-technology and electronics manufacturing.',
@@ -469,8 +469,8 @@ export const INITIAL_FEATURED_ARTICLES = [
     link: 'https://indianexpress.com',
     image: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1200&auto=format&fit=crop&q=80',
     pubDate: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
-    snippet: 'A five-judge Constitution bench reinforces cooperative federalism principles regarding Union and State legislative jurisdiction.',
-    content: 'In a significant constitutional jurisprudence development, the Supreme Court of India reaffirmed the doctrine of cooperative federalism, clarifying the legislative powers of state assemblies and union authorities in matters of civic governance.',
+    snippet: 'A five-judge Constitution Bench of the Supreme Court has issued a definitive ruling reinforcing the doctrine of cooperative federalism between Union and State authorities. The verdict delineates executive boundaries, affirming that state governments retain administrative autonomy in devolved public sectors without undue central intervention. Legal scholars highlight that the judgment establishes critical constitutional precedent for institutional harmony across all tiers of governance.',
+    content: 'In a significant constitutional jurisprudence development, the Supreme Court of India reaffirmed the doctrine of cooperative federalism, clarifying the legislative powers of state assemblies and union authorities in matters of civic governance.\n\nThe unanimous opinion delivered from the Chief Justice\'s bench noted that cooperative federalism is an indispensable pillar of India\'s constitutional architecture, mandating mutual institutional deference.\n\nThe ruling resolves longstanding jurisdictional ambiguities and provides administrative roadmaps for concurrent list policymaking.',
     keyPoints: [
       'Upholds constitutional balance between Union and State executive powers.',
       'Reinforces institutional autonomy and harmonious federal administration.',
@@ -489,8 +489,8 @@ export const INITIAL_FEATURED_ARTICLES = [
     link: 'https://www.livemint.com',
     image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&auto=format&fit=crop&q=80',
     pubDate: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    snippet: 'Strategic approvals for silicon fabs and compound semiconductor packaging facilities mark a major leap toward global supply chain resilience.',
-    content: 'India is rapidly establishing its presence in the global microelectronics race with construction commencing on three new commercial semiconductor fabrication facilities in Gujarat and Assam.',
+    snippet: 'India\'s sovereign semiconductor ambitions achieved major progress with statutory greenlights for commercial mega-fabrication clusters and advanced testing facilities in Gujarat and Assam. Operating under the India Semiconductor Mission, these facilities focus on 28nm silicon nodes and compound microcontrollers for domestic EV, telecommunications, and aerospace hardware. The initiative significantly insulates Indian electronic manufacturing against global shipping disruptions.',
+    content: 'India is rapidly establishing its presence in the global microelectronics race with construction commencing on three new commercial semiconductor fabrication facilities in Gujarat and Assam.\n\nThe joint venture partnerships bring together world-class foundry engineering, specialized cleanroom technology, and domestic industrial consortia backed by central capital incentives.\n\nProduction output from the initial commercial runs is scheduled to supply domestic automakers and 5G network equipment providers by early next year.',
     keyPoints: [
       'Multi-billion dollar capital expenditure approved for commercial silicon wafer fabs.',
       'Emphasis on 28nm and specialized automotive semiconductor packaging.',
