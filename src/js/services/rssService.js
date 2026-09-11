@@ -1,5 +1,6 @@
 import { SOURCE_REGISTRY, INITIAL_FEATURED_ARTICLES, CATEGORIES } from '../config/sources.js';
 import { cacheService } from './cacheService.js';
+import { firebaseService } from './firebaseService.js';
 
 // =========================================================================
 // VERIFIED CONTEXTUAL PHOTOJOURNALISM REGISTRY (ZERO MISMATCH / ZERO AI)
@@ -94,8 +95,24 @@ class RssService {
     // Sort by publish date descending
     uniqueArticles.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
 
-    // Merge User-Published Articles from Editorial Studio at the top
-    const customUserArticles = cacheService.getCustomArticles();
+    // Merge User-Published Articles from Cloud Firestore (for all public readers) + Local Cache
+    let cloudArticles = [];
+    try {
+      cloudArticles = await firebaseService.fetchCloudArticles();
+    } catch (e) {
+      console.warn('Could not fetch cloud articles:', e);
+    }
+    const localCustomArticles = cacheService.getCustomArticles();
+
+    const mergedCustomMap = new Map();
+    [...localCustomArticles, ...cloudArticles].forEach(art => {
+      if (art && art.id) {
+        mergedCustomMap.set(art.id, art);
+      }
+    });
+    const customUserArticles = Array.from(mergedCustomMap.values());
+    customUserArticles.sort((a, b) => new Date(b.pubDate || 0).getTime() - new Date(a.pubDate || 0).getTime());
+
     const finalArticles = [...customUserArticles, ...uniqueArticles];
 
     this.cachedArticles = finalArticles;

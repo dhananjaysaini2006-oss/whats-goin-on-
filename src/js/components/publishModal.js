@@ -811,8 +811,12 @@ export class PublishModalComponent {
       'Implications reviewed by What\'s Going On editorial desk.'
     ];
 
+    const articleId = this.editingArticleId || ('user-art-' + Date.now());
+    const origin = (typeof window !== 'undefined' && window.location.origin) ? window.location.origin : 'https://www.whatgoinon.online';
+    const deepLink = `${origin}/?story=${articleId}`;
+
     const articleObj = {
-      id: this.editingArticleId || ('user-art-' + Date.now()),
+      id: articleId,
       title: headline,
       source: byline,
       sourceId: 'user-published',
@@ -820,7 +824,7 @@ export class PublishModalComponent {
       region: category === CATEGORIES.WORLD ? 'global' : 'india',
       isPolitics: category === CATEGORIES.INDIA_POLITICS || category === CATEGORIES.INDIA,
       isUserPublished: true,
-      link: '#user-story-' + Date.now(),
+      link: deepLink,
       image: imageUrl,
       pubDate: new Date().toISOString(),
       snippet: `${dateline} ${excerpt}`,
@@ -829,7 +833,13 @@ export class PublishModalComponent {
       readTime: readTime
     };
 
+    // Save locally to cacheService
     cacheService.saveCustomArticle(articleObj);
+
+    // Sync to Firestore Cloud immediately so all public visitors and WhatsApp recipients can view it
+    firebaseService.saveArticleToCloud(articleObj).catch(err => {
+      console.warn('Background sync to Firestore cloud failed:', err);
+    });
 
     if (this.currentPreviewBlobUrl) {
       URL.revokeObjectURL(this.currentPreviewBlobUrl);

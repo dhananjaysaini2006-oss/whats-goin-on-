@@ -1,5 +1,6 @@
 import { cacheService } from '../services/cacheService.js';
 import { speechService } from '../services/speechService.js';
+import { firebaseService } from '../services/firebaseService.js';
 
 export class ArticleModalComponent {
   constructor(onBookmarkToggleCallback) {
@@ -258,44 +259,57 @@ export class ArticleModalComponent {
       });
     }
 
+    const origin = (typeof window !== 'undefined' && window.location.origin) ? window.location.origin : 'https://www.whatgoinon.online';
+    const fullStoryUrl = (article.link && article.link.startsWith('http'))
+      ? article.link
+      : `${origin}/?story=${encodeURIComponent(article.id)}`;
+
     // Copy link
     const copyBtn = document.getElementById('modal-copy-link-btn');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(article.link || window.location.href);
+        navigator.clipboard.writeText(fullStoryUrl);
         copyBtn.textContent = 'Copied!';
         setTimeout(() => { copyBtn.textContent = 'Copy Link'; }, 2000);
       });
     }
 
-    // Share button (Web Share API / clipboard fallback)
+    // Share button (Web Share API / WhatsApp direct link fallback)
     const shareBtn = document.getElementById('modal-whatsapp-btn');
     if (shareBtn) {
       shareBtn.addEventListener('click', async () => {
-        const shareData = {
-          title: article.title,
-          text: article.snippet || article.title,
-          url: article.link || window.location.href
-        };
-        try {
-          if (navigator.share) {
-            await navigator.share(shareData);
-          } else {
-            await navigator.clipboard.writeText(article.link || window.location.href);
-            const origHtml = shareBtn.innerHTML;
-            shareBtn.textContent = 'Link Copied!';
-            setTimeout(() => { shareBtn.innerHTML = origHtml; }, 2000);
+        const shareTitle = article.title;
+        const shareSummary = article.snippet ? article.snippet.replace(/<[^>]+>/g, '').slice(0, 160) + '...' : '';
+        const whatsappMsg = `📰 *${shareTitle}*\n${shareSummary}\n\nRead full story on What's Going On:\n${fullStoryUrl}`;
+
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: shareTitle,
+              text: `${shareTitle}\n\nRead full story on What's Going On:`,
+              url: fullStoryUrl
+            });
+            return;
+          } catch (e) {
+            if (e.name === 'AbortError') return;
           }
-        } catch (e) { /* user cancelled */ }
+        }
+
+        // WhatsApp direct redirect
+        const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappMsg)}`;
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
       });
     }
 
     // Delete user published article
     const deleteUserBtn = document.getElementById('modal-delete-user-article-btn');
     if (deleteUserBtn) {
-      deleteUserBtn.addEventListener('click', () => {
+      deleteUserBtn.addEventListener('click', async () => {
         if (confirm('Are you sure you want to unpublish this story from What\'s Going On?')) {
           cacheService.deleteCustomArticle(article.id);
+          try {
+            await firebaseService.deleteArticleFromCloud(article.id);
+          } catch (e) {}
           this.close();
           window.location.reload();
         }

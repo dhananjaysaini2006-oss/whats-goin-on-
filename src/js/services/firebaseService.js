@@ -52,6 +52,7 @@ class FirebaseService {
     this.firebaseApp = null;
     this.firebaseAuth = null;
     this.firebaseStorage = null;
+    this.firestoreDb = null;
 
     this.init();
   }
@@ -159,6 +160,105 @@ class FirebaseService {
     });
 
     return Promise.race([uploadPromise, timeoutPromise]);
+  }
+
+  /**
+   * Lazily initialize & retrieve Firestore instance
+   */
+  async getFirestoreDb() {
+    if (this.firestoreDb) return this.firestoreDb;
+
+    const { initializeApp, getApps, getApp } = await import('firebase/app');
+    const { getFirestore } = await import('firebase/firestore');
+
+    if (!this.firebaseApp) {
+      this.firebaseApp = !getApps().length ? initializeApp(FIREBASE_CONFIG) : getApp();
+    }
+    this.firestoreDb = getFirestore(this.firebaseApp, firebaseAppletConfig?.firestoreDatabaseId || undefined);
+    return this.firestoreDb;
+  }
+
+  /**
+   * Save a published article to Firestore cloud so it's visible to the public everywhere
+   */
+  async saveArticleToCloud(article) {
+    if (!article || !article.id) return article;
+    try {
+      const db = await this.getFirestoreDb();
+      const { doc, setDoc } = await import('firebase/firestore');
+      const articleDoc = {
+        ...article,
+        isUserPublished: true,
+        sourceId: article.sourceId || 'user-published',
+        syncedAt: new Date().toISOString()
+      };
+      await setDoc(doc(db, 'articles', article.id), articleDoc, { merge: true });
+      console.info('[FirebaseService] Article synced to Firestore cloud:', article.id);
+      return articleDoc;
+    } catch (e) {
+      console.error('[FirebaseService] Error saving article to Firestore:', e);
+      return article;
+    }
+  }
+
+  /**
+   * Fetch all custom published articles from Firestore cloud
+   */
+  async fetchCloudArticles() {
+    try {
+      const db = await this.getFirestoreDb();
+      const { collection, getDocs, query, limit } = await import('firebase/firestore');
+
+      const q = query(collection(db, 'articles'), limit(100));
+      const snap = await getDocs(q);
+      const list = [];
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.isUserPublished || data.sourceId === 'user-published' || d.id.startsWith('user-art-')) {
+          list.push({ ...data, id: data.id || d.id });
+        }
+      });
+      list.sort((a, b) => new Date(b.pubDate || 0).getTime() - new Date(a.pubDate || 0).getTime());
+      return list;
+    } catch (e) {
+      console.warn('[FirebaseService] Could not fetch cloud articles:', e);
+      return [];
+    }
+  }
+
+  /**
+   * Fetch a single article by ID from Firestore cloud
+   */
+  async fetchArticleById(articleId) {
+    if (!articleId) return null;
+    try {
+      const db = await this.getFirestoreDb();
+      const { doc, getDoc } = await import('firebase/firestore');
+      const cleanId = articleId.replace('#', '');
+      const snap = await getDoc(doc(db, 'articles', cleanId));
+      if (snap.exists()) {
+        return { ...snap.data(), id: snap.id };
+      }
+      return null;
+    } catch (e) {
+      console.warn('[FirebaseService] Could not fetch article by ID:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Delete an article from Firestore cloud
+   */
+  async deleteArticleFromCloud(articleId) {
+    if (!articleId) return;
+    try {
+      const db = await this.getFirestoreDb();
+      const { doc, deleteDoc } = await import('firebase/firestore');
+      await deleteDoc(doc(db, 'articles', articleId));
+      console.info('[FirebaseService] Deleted article from Firestore cloud:', articleId);
+    } catch (e) {
+      console.error('[FirebaseService] Error deleting article from Firestore:', e);
+    }
   }
 
   loadSavedSession() {

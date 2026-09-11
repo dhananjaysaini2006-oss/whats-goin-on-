@@ -52,8 +52,18 @@ class NewsApp {
       });
     }
     
-    // Initial fetch
+    // Initial fetch (RSS wires + cloud Firestore published stories)
     await this.fetchNews(false);
+
+    // Auto-sync any author's local custom articles to Firestore cloud so all public readers can see them
+    this.syncLocalArticlesToCloud();
+
+    // Check for story query param or hash deep-link (e.g. ?story=... or #user-story-...) and auto-open
+    await this.handleDeepLinkStory();
+
+    // Listen for hash / popstate changes to support deep links dynamically
+    window.addEventListener('hashchange', () => this.handleDeepLinkStory());
+    window.addEventListener('popstate', () => this.handleDeepLinkStory());
 
     // Back-to-top button
     this.initBackToTop();
@@ -489,6 +499,71 @@ class NewsApp {
       searchQuery: this.searchQuery,
       sourceFilter: this.selectedSource
     });
+  }
+
+  async handleDeepLinkStory() {
+    const urlParams = new URLSearchParams(window.location.search);
+    let storyId = urlParams.get('story') || urlParams.get('id');
+
+    const hash = window.location.hash.replace('#', '');
+    if (!storyId && hash && (hash.startsWith('user-art-') || hash.startsWith('user-story-') || hash.startsWith('art-') || hash.startsWith('story-'))) {
+      storyId = hash;
+    }
+
+    if (!storyId) return;
+
+    // 1. Look in currently loaded articles
+    let target = this.articles.find(a => 
+      a.id === storyId ||
+      a.id === `user-art-${storyId}` ||
+      (a.link && (a.link.includes(storyId) || (hash && a.link.includes(hash))))
+    );
+
+    // 2. If not found in memory, look in local cache
+    if (!target) {
+      const localArticles = cacheService.getCustomArticles();
+      target = localArticles.find(a => 
+        a.id === storyId ||
+        a.id === `user-art-${storyId}` ||
+        (a.link && (a.link.includes(storyId) || (hash && a.link.includes(hash))))
+      );
+    }
+
+    // 3. If still not found, fetch live from Firestore cloud database by ID
+    if (!target) {
+      try {
+        target = await firebaseService.fetchArticleById(storyId);
+      } catch (e) {
+        console.warn('Could not fetch deep-linked article from cloud:', e);
+      }
+    }
+
+    // 4. If target found, open modal immediately for the reader
+    if (target) {
+      if (!this.articles.some(a => a.id === target.id)) {
+        this.articles.unshift(target);
+        this.renderActiveView();
+      }
+      setTimeout(() => {
+        if (this.modal) {
+          this.modal.open(target);
+        }
+      }, 250);
+    }
+  }
+
+  async syncLocalArticlesToCloud() {
+    try {
+      const localArticles = cacheService.getCustomArticles();
+      if (!localArticles || localArticles.length === 0) return;
+      for (const art of localArticles) {
+        if (art && art.id) {
+          await firebaseService.saveArticleToCloud(art);
+        }
+      }
+    } catch (e) {
+      console.warn('Background sync of local articles to Firestore skipped:', e);
+    }
   }
 
   showToast(message, type = 'info') {
