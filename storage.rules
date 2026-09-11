@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules for WHAT'S GOING ON News Intelligence Portal
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Featured Photojournalist Images uploaded via Publish News Story CMS
+    match /article-images/{imageFile} {
+      // Allow public read so readers across the portal can view article cover photos
+      allow read: if true;
+
+      // Allow photojournalist uploads:
+      // - Limits file size to 5MB (5 * 1024 * 1024 bytes)
+      // - Enforces image MIME type (.jpg, .jpeg, .png, .webp)
+      allow write: if request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Default: block access to all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

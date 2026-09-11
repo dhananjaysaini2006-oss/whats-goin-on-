@@ -1,18 +1,19 @@
+import firebaseAppletConfig from '../../../firebase-applet-config.json';
+
 /**
  * Firebase Integration & Authentication Service
- * Supports live Firebase Cloud project credentials as well as
- * pre-configured instant Admin and Reader authentication.
+ * Supports live Firebase Cloud project credentials and Firebase Storage
+ * as well as pre-configured instant Admin and Reader authentication.
  */
 
-// Your Firebase Project Configuration
-// Replace these placeholder values with your real Firebase Console credentials:
+// Resolved Firebase Project Configuration
 export const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDemoPlaceholderKeyForWhatsGoingOn",
-  authDomain: "whats-going-on-news.firebaseapp.com",
-  projectId: "whats-going-on-news",
-  storageBucket: "whats-going-on-news.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef123456"
+  apiKey: firebaseAppletConfig?.apiKey || "AIzaSyDemoPlaceholderKeyForWhatsGoingOn",
+  authDomain: firebaseAppletConfig?.authDomain || "whats-going-on-news.firebaseapp.com",
+  projectId: firebaseAppletConfig?.projectId || "whats-going-on-news",
+  storageBucket: firebaseAppletConfig?.storageBucket || "essential-guard-367s8.firebasestorage.app",
+  messagingSenderId: firebaseAppletConfig?.messagingSenderId || "123456789012",
+  appId: firebaseAppletConfig?.appId || "1:123456789012:web:abcdef123456"
 };
 
 const STORAGE_KEYS = {
@@ -43,8 +44,6 @@ function verifyPassword(plain, stored) {
 // Admin account (credentials obfuscated at runtime — never stored as plain text)
 const _a = { e: 'dhananjaysaini2006@gmail.com', h: hashPassword('242622') };
 
-
-
 class FirebaseService {
   constructor() {
     this.currentUser = null;
@@ -52,6 +51,7 @@ class FirebaseService {
     this.isFirebaseLive = false;
     this.firebaseApp = null;
     this.firebaseAuth = null;
+    this.firebaseStorage = null;
 
     this.init();
   }
@@ -61,19 +61,88 @@ class FirebaseService {
     this.loadSavedSession();
     this.ensureAdminExists();
 
-    // Try initializing official Firebase SDK if installed
+    // Try initializing official Firebase SDK if credentials available
     try {
       if (FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.includes('Placeholder')) {
-        const { initializeApp } = await import('firebase/app');
+        const { initializeApp, getApps, getApp } = await import('firebase/app');
         const { getAuth } = await import('firebase/auth');
-        this.firebaseApp = initializeApp(FIREBASE_CONFIG);
+        this.firebaseApp = !getApps().length ? initializeApp(FIREBASE_CONFIG) : getApp();
         this.firebaseAuth = getAuth(this.firebaseApp);
         this.isFirebaseLive = true;
         console.info('Connected to live Firebase Cloud project.');
       }
     } catch (e) {
-      console.info('Using local Firebase Authentication adapter.');
+      console.info('Using local Firebase Authentication adapter.', e);
     }
+  }
+
+  /**
+   * Lazily initialize & retrieve Firebase Storage instance
+   */
+  async getFirebaseStorage() {
+    if (this.firebaseStorage) return this.firebaseStorage;
+
+    const { initializeApp, getApps, getApp } = await import('firebase/app');
+    const { getStorage } = await import('firebase/storage');
+
+    if (!this.firebaseApp) {
+      this.firebaseApp = !getApps().length ? initializeApp(FIREBASE_CONFIG) : getApp();
+    }
+    this.firebaseStorage = getStorage(this.firebaseApp);
+    return this.firebaseStorage;
+  }
+
+  /**
+   * Upload an article featured image to Firebase Storage
+   * Under path: article-images/{timestamp}-{sanitized-filename}
+   * @param {File} file
+   * @param {Function} onProgress (percent: number) => void
+   * @returns {Promise<string>} Download URL
+   */
+  async uploadArticleImage(file, onProgress) {
+    const storage = await this.getFirebaseStorage();
+    const { ref, uploadBytesResumable, getDownloadURL } = await import('firebase/storage');
+
+    // Create sanitized unique filename: article-images/{timestamp}-{filename}
+    const safeName = (file.name || 'image.jpg').replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storagePath = `article-images/${Date.now()}-${safeName}`;
+    const storageRef = ref(storage, storagePath);
+
+    const metadata = {
+      contentType: file.type || 'image/jpeg',
+      customMetadata: {
+        originalName: file.name,
+        uploadedAt: new Date().toISOString()
+      }
+    };
+
+    const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+
+    return new Promise((resolve, reject) => {
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          if (snapshot.totalBytes > 0) {
+            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+            if (typeof onProgress === 'function') {
+              onProgress(progress);
+            }
+          }
+        },
+        (error) => {
+          console.error('[Firebase Storage] Upload error:', error);
+          reject(error);
+        },
+        async () => {
+          try {
+            const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+            resolve(downloadUrl);
+          } catch (err) {
+            reject(err);
+          }
+        }
+      );
+    });
   }
 
   loadSavedSession() {

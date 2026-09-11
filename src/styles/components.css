@@ -1381,18 +1381,227 @@
   font-weight: 700;
 }
 
+/* Featured Photojournalist Image Dropzone */
+.publish-dropzone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 16px;
+  background: var(--bg-secondary);
+  border: 2px dashed var(--border-medium);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-fast);
+  margin-top: 6px;
+  text-align: center;
+  user-select: none;
+}
+
+.publish-dropzone:hover,
+.publish-dropzone:focus-visible {
+  border-color: var(--hindu-navy);
+  background: var(--bg-tertiary);
+}
+
+.publish-dropzone.is-dragover {
+  border-color: var(--hindu-navy);
+  border-style: solid;
+  background: rgba(0, 51, 102, 0.08);
+  box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.18);
+  transform: scale(1.005);
+}
+
+.publish-dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.publish-dropzone-icon {
+  color: var(--text-muted);
+  transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+.publish-dropzone:hover .publish-dropzone-icon,
+.publish-dropzone.is-dragover .publish-dropzone-icon {
+  color: var(--hindu-navy);
+  transform: translateY(-2px);
+}
+
+.publish-dropzone-title {
+  font-family: var(--font-sans);
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.publish-dropzone-browse {
+  color: var(--hindu-navy);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.publish-dropzone-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.publish-dropzone-status {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.publish-dropzone-status-text {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.publish-dropzone-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 51, 102, 0.2);
+  border-top-color: var(--hindu-navy);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.publish-dropzone-progress-bar {
+  width: 100%;
+  max-width: 320px;
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+
+.publish-dropzone-progress-fill {
+  height: 100%;
+  background: var(--hindu-navy);
+  border-radius: var(--radius-full);
+  transition: width 0.15s ease-out;
+}
+
+.publish-dropzone-success-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--accent-emerald, #10b981);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.publish-dropzone-replace-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.publish-dropzone-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid var(--hindu-red, #dc2626);
+  border-radius: var(--radius-sm);
+  color: var(--hindu-red, #dc2626);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.publish-dropzone-btn-retry {
+  flex-shrink: 0;
+  background: var(--hindu-red, #dc2626);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.publish-dropzone-btn-retry:hover {
+  opacity: 0.88;
+}
+
+.publish-url-fallback-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.publish-url-fallback-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.publish-url-fallback-row .publish-input {
+  flex: 1;
+}
+
 .publish-image-preview-wrap {
+  position: relative;
   width: 100%;
   height: 180px;
   border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  margin-top: 6px;
 }
 
 .publish-image-preview {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.publish-preview-overlay {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  pointer-events: none;
+}
+
+.publish-preview-tag {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .publish-modal-footer {

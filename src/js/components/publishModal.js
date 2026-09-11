@@ -37,6 +37,10 @@ export class PublishModalComponent {
     ];
 
     this.selectedImageUrl = this.presetImages[0].url;
+    this.isUploadingImage = false;
+    this.lastSelectedFile = null;
+    this.currentPreviewBlobUrl = null;
+    this.dragCounter = 0;
   }
 
   init() {
@@ -123,9 +127,14 @@ export class PublishModalComponent {
             </div>
           </div>
 
-          <!-- Featured Image -->
+          <!-- Featured Image Section -->
           <div class="publish-form-group">
-            <label class="publish-label">Featured Photojournalist Image</label>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px;">
+              <label class="publish-label">Featured Photojournalist Image *</label>
+              <span style="font-size: 0.72rem; color: var(--text-muted);">Upload photo, pick preset, or paste URL</span>
+            </div>
+
+            <!-- Preset Photo Selector -->
             <div class="preset-photo-pills" id="pub-photo-presets">
               ${this.presetImages.map((p, idx) => `
                 <button type="button" class="preset-photo-btn ${idx === 0 ? 'active' : ''}" data-url="${p.url}">
@@ -133,9 +142,78 @@ export class PublishModalComponent {
                 </button>
               `).join('')}
             </div>
-            <input type="url" id="pub-custom-image-url" class="publish-input" style="margin-top: 8px;" placeholder="Or paste custom image URL (https://...)" value="${this.presetImages[0].url}" />
-            <div class="publish-image-preview-wrap" style="margin-top: 10px;">
+
+            <!-- Drag & Drop Dropzone Component -->
+            <div class="publish-dropzone" id="pub-dropzone" tabindex="0" role="button" aria-label="Drop photojournalist image here or browse">
+              <input type="file" id="pub-file-input" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display: none;" />
+
+              <!-- Default Dropzone Prompt -->
+              <div class="publish-dropzone-content" id="pub-dropzone-content">
+                <svg class="publish-dropzone-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <div class="publish-dropzone-title">
+                  <span id="pub-dropzone-prompt">Drag &amp; drop photojournalist image here, or </span>
+                  <span class="publish-dropzone-browse">browse files</span>
+                </div>
+                <div class="publish-dropzone-sub">
+                  Supports JPG, JPEG, PNG, WEBP &bull; Max 5MB &bull; Uploads to Firebase Storage
+                </div>
+              </div>
+
+              <!-- Uploading / Progress View -->
+              <div id="pub-dropzone-uploading" class="publish-dropzone-status" style="display: none;">
+                <div class="publish-dropzone-status-text">
+                  <div class="publish-dropzone-spinner"></div>
+                  <span id="pub-upload-progress-text">Uploading to Firebase Storage... 0%</span>
+                </div>
+                <div class="publish-dropzone-progress-bar">
+                  <div id="pub-upload-progress-fill" class="publish-dropzone-progress-fill" style="width: 0%;"></div>
+                </div>
+                <span id="pub-upload-filename" style="font-size: 0.72rem; color: var(--text-muted);"></span>
+              </div>
+
+              <!-- Success State -->
+              <div id="pub-dropzone-success" class="publish-dropzone-status" style="display: none;">
+                <div class="publish-dropzone-success-badge">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span id="pub-success-filename">Uploaded to Firebase Storage</span>
+                </div>
+                <div class="publish-dropzone-replace-hint">Click or drag a new photo to replace</div>
+              </div>
+            </div>
+
+            <!-- Inline Error Box with Retry Action -->
+            <div id="pub-upload-error" class="publish-dropzone-error" style="display: none;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span id="pub-upload-error-text"></span>
+              </div>
+              <button type="button" id="pub-upload-retry-btn" class="publish-dropzone-btn-retry" style="display: none;">
+                Retry
+              </button>
+            </div>
+
+            <!-- Manual URL Fallback Field -->
+            <div class="publish-url-fallback-row">
+              <span class="publish-url-fallback-label">Or direct URL:</span>
+              <input type="url" id="pub-custom-image-url" class="publish-input" placeholder="Or paste custom image URL (https://...)" value="${this.presetImages[0].url}" />
+            </div>
+
+            <!-- Live Image Preview Thumbnail -->
+            <div class="publish-image-preview-wrap">
               <img id="pub-image-preview" src="${this.presetImages[0].url}" alt="Preview" class="publish-image-preview" />
+              <div class="publish-preview-overlay">
+                <span id="pub-preview-tag" class="publish-preview-tag">Preset Photo</span>
+              </div>
             </div>
           </div>
 
@@ -200,6 +278,7 @@ export class PublishModalComponent {
     const presetBtns = this.modalEl.querySelectorAll('.preset-photo-btn');
     const customUrlInput = this.modalEl.querySelector('#pub-custom-image-url');
     const previewImg = this.modalEl.querySelector('#pub-image-preview');
+    const previewTag = this.modalEl.querySelector('#pub-preview-tag');
 
     presetBtns.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -209,16 +288,39 @@ export class PublishModalComponent {
         this.selectedImageUrl = url;
         if (customUrlInput) customUrlInput.value = url;
         if (previewImg) previewImg.src = url;
+        if (previewTag) previewTag.textContent = 'Preset Photo';
+
+        // Override uploaded photo and reset dropzone
+        this.lastSelectedFile = null;
+        if (this.currentPreviewBlobUrl) {
+          URL.revokeObjectURL(this.currentPreviewBlobUrl);
+          this.currentPreviewBlobUrl = null;
+        }
+        this.resetDropzoneDefault();
+        this.clearDropzoneError();
       });
     });
 
+    // Manual Custom URL input
     if (customUrlInput) {
       customUrlInput.addEventListener('input', () => {
         presetBtns.forEach(b => b.classList.remove('active'));
         this.selectedImageUrl = customUrlInput.value.trim();
         if (previewImg) previewImg.src = this.selectedImageUrl;
+        if (previewTag) previewTag.textContent = 'Custom URL';
+
+        this.lastSelectedFile = null;
+        if (this.currentPreviewBlobUrl) {
+          URL.revokeObjectURL(this.currentPreviewBlobUrl);
+          this.currentPreviewBlobUrl = null;
+        }
+        this.resetDropzoneDefault();
+        this.clearDropzoneError();
       });
     }
+
+    // Initialize Dropzone Listeners
+    this.setupDropzone();
 
     // Form submit
     const form = this.modalEl.querySelector('#publish-studio-form');
@@ -228,6 +330,286 @@ export class PublishModalComponent {
         this.handleSubmit();
       });
     }
+  }
+
+  setupDropzone() {
+    const dropzone = this.modalEl.querySelector('#pub-dropzone');
+    const fileInput = this.modalEl.querySelector('#pub-file-input');
+    const retryBtn = this.modalEl.querySelector('#pub-upload-retry-btn');
+    if (!dropzone || !fileInput) return;
+
+    // Click to browse
+    dropzone.addEventListener('click', (e) => {
+      if (this.isUploadingImage) return;
+      if (e.target.closest('#pub-upload-retry-btn')) return;
+      fileInput.click();
+    });
+
+    // Keyboard accessibility (Enter / Space)
+    dropzone.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && !this.isUploadingImage) {
+        e.preventDefault();
+        fileInput.click();
+      }
+    });
+
+    // File input change
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files && fileInput.files.length > 0) {
+        this.handleFileSelected(fileInput.files[0]);
+      }
+    });
+
+    // Drag & Drop event handling with enter counter to prevent child flicker
+    this.dragCounter = 0;
+
+    dropzone.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.dragCounter++;
+      if (!this.isUploadingImage) {
+        dropzone.classList.add('is-dragover');
+        const prompt = this.modalEl.querySelector('#pub-dropzone-prompt');
+        if (prompt) prompt.textContent = 'Drop image here to upload, or ';
+      }
+    });
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!this.isUploadingImage) {
+        dropzone.classList.add('is-dragover');
+      }
+    });
+
+    dropzone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.dragCounter--;
+      if (this.dragCounter <= 0) {
+        this.dragCounter = 0;
+        dropzone.classList.remove('is-dragover');
+        const prompt = this.modalEl.querySelector('#pub-dropzone-prompt');
+        if (prompt) prompt.textContent = 'Drag & drop photojournalist image here, or ';
+      }
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.dragCounter = 0;
+      dropzone.classList.remove('is-dragover');
+      const prompt = this.modalEl.querySelector('#pub-dropzone-prompt');
+      if (prompt) prompt.textContent = 'Drag & drop photojournalist image here, or ';
+
+      if (this.isUploadingImage) return;
+
+      const dt = e.dataTransfer;
+      if (dt && dt.files && dt.files.length > 0) {
+        this.handleFileSelected(dt.files[0]);
+      }
+    });
+
+    // Retry upload button
+    if (retryBtn) {
+      retryBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.lastSelectedFile) {
+          this.uploadFileToFirebase(this.lastSelectedFile);
+        }
+      });
+    }
+  }
+
+  handleFileSelected(file) {
+    if (!file) return;
+
+    // Clear any previous error
+    this.clearDropzoneError();
+
+    // 1. Validate file extension & MIME type (.jpg, .jpeg, .png, .webp)
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const ext = '.' + (file.name.split('.').pop() || '').toLowerCase();
+    const mime = (file.type || '').toLowerCase();
+
+    const isValidType = allowedMimeTypes.includes(mime) || allowedExtensions.includes(ext);
+    if (!isValidType) {
+      this.showDropzoneError(
+        `Invalid file type "${ext || file.type}". Only .jpg, .jpeg, .png, and .webp images are allowed.`,
+        false
+      );
+      return;
+    }
+
+    // 2. Validate file size (Max 5MB)
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      this.showDropzoneError(
+        `File size exceeds 5MB limit (${sizeMB} MB). Please choose a smaller image.`,
+        false
+      );
+      return;
+    }
+
+    // 3. Cache file for retry if needed
+    this.lastSelectedFile = file;
+
+    // 4. Clear active state from preset buttons (upload overrides preset)
+    const presetBtns = this.modalEl.querySelectorAll('.preset-photo-btn');
+    presetBtns.forEach(btn => btn.classList.remove('active'));
+
+    // 5. Show live preview thumbnail of selected/dropped image BEFORE upload completes
+    if (this.currentPreviewBlobUrl) {
+      URL.revokeObjectURL(this.currentPreviewBlobUrl);
+    }
+    this.currentPreviewBlobUrl = URL.createObjectURL(file);
+
+    const previewImg = this.modalEl.querySelector('#pub-image-preview');
+    if (previewImg) previewImg.src = this.currentPreviewBlobUrl;
+
+    const previewTag = this.modalEl.querySelector('#pub-preview-tag');
+    if (previewTag) previewTag.textContent = 'Local Preview (Uploading...)';
+
+    // 6. Begin upload to Firebase Storage
+    this.uploadFileToFirebase(file);
+  }
+
+  async uploadFileToFirebase(file) {
+    this.isUploadingImage = true;
+    this.clearDropzoneError();
+    this.setDropzoneUploadingState(file, 0);
+
+    const submitBtn = this.modalEl.querySelector('#btn-submit-publish');
+    const originalSubmitHtml = submitBtn ? submitBtn.innerHTML : '';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.6';
+      submitBtn.style.cursor = 'not-allowed';
+      submitBtn.innerHTML = `
+        <div class="publish-dropzone-spinner" style="border-top-color:#fff; border-color:rgba(255,255,255,0.3);"></div>
+        <span>Uploading Photo...</span>
+      `;
+    }
+
+    try {
+      const downloadUrl = await firebaseService.uploadArticleImage(file, (progress) => {
+        this.setDropzoneUploadingState(file, progress);
+      });
+
+      // Upload Successful!
+      this.isUploadingImage = false;
+      this.selectedImageUrl = downloadUrl;
+
+      // Populate existing image URL field so preview and publish logic keep working
+      const customUrlInput = this.modalEl.querySelector('#pub-custom-image-url');
+      if (customUrlInput) customUrlInput.value = downloadUrl;
+
+      // Update preview to live Firebase Storage download URL
+      const previewImg = this.modalEl.querySelector('#pub-image-preview');
+      if (previewImg) previewImg.src = downloadUrl;
+
+      const previewTag = this.modalEl.querySelector('#pub-preview-tag');
+      if (previewTag) previewTag.textContent = 'Firebase Cloud Storage';
+
+      this.setDropzoneSuccessState(file);
+
+    } catch (err) {
+      console.error('[PublishModal] Upload error:', err);
+      this.isUploadingImage = false;
+      this.resetDropzoneDefault();
+
+      let errorMsg = 'Upload failed. Please check connection and retry.';
+      if (err.code === 'storage/unauthorized') {
+        errorMsg = 'Upload rejected by Firebase Storage rules. Ensure write access is granted for article-images/.';
+      } else if (err.code === 'storage/quota-exceeded') {
+        errorMsg = 'Firebase Storage quota exceeded.';
+      } else if (err.message) {
+        errorMsg = `Upload failed: ${err.message}`;
+      }
+
+      this.showDropzoneError(errorMsg, true);
+
+      const previewTag = this.modalEl.querySelector('#pub-preview-tag');
+      if (previewTag) previewTag.textContent = 'Local Preview (Upload Failed)';
+
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '';
+        submitBtn.style.cursor = '';
+        submitBtn.innerHTML = originalSubmitHtml;
+      }
+    }
+  }
+
+  setDropzoneUploadingState(file, progress) {
+    const defaultView = this.modalEl.querySelector('#pub-dropzone-content');
+    const uploadingView = this.modalEl.querySelector('#pub-dropzone-uploading');
+    const successView = this.modalEl.querySelector('#pub-dropzone-success');
+    const progressFill = this.modalEl.querySelector('#pub-upload-progress-fill');
+    const progressText = this.modalEl.querySelector('#pub-upload-progress-text');
+    const filenameLabel = this.modalEl.querySelector('#pub-upload-filename');
+
+    if (defaultView) defaultView.style.display = 'none';
+    if (successView) successView.style.display = 'none';
+    if (uploadingView) uploadingView.style.display = 'flex';
+
+    if (progressFill) progressFill.style.width = `${progress}%`;
+    if (progressText) progressText.textContent = `Uploading to Firebase Storage... ${progress}%`;
+    if (filenameLabel) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      filenameLabel.textContent = `${file.name} (${sizeMB} MB)`;
+    }
+  }
+
+  setDropzoneSuccessState(file) {
+    const defaultView = this.modalEl.querySelector('#pub-dropzone-content');
+    const uploadingView = this.modalEl.querySelector('#pub-dropzone-uploading');
+    const successView = this.modalEl.querySelector('#pub-dropzone-success');
+    const successFilename = this.modalEl.querySelector('#pub-success-filename');
+
+    if (defaultView) defaultView.style.display = 'none';
+    if (uploadingView) uploadingView.style.display = 'none';
+    if (successView) successView.style.display = 'flex';
+
+    if (successFilename) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      successFilename.textContent = `✓ Uploaded: ${file.name} (${sizeMB} MB)`;
+    }
+  }
+
+  resetDropzoneDefault() {
+    const defaultView = this.modalEl.querySelector('#pub-dropzone-content');
+    const uploadingView = this.modalEl.querySelector('#pub-dropzone-uploading');
+    const successView = this.modalEl.querySelector('#pub-dropzone-success');
+    const fileInput = this.modalEl.querySelector('#pub-file-input');
+    const dropzone = this.modalEl.querySelector('#pub-dropzone');
+
+    if (defaultView) defaultView.style.display = 'flex';
+    if (uploadingView) uploadingView.style.display = 'none';
+    if (successView) successView.style.display = 'none';
+    if (fileInput) fileInput.value = '';
+    if (dropzone) dropzone.classList.remove('is-dragover');
+    this.dragCounter = 0;
+  }
+
+  showDropzoneError(message, canRetry = false) {
+    const errorBox = this.modalEl.querySelector('#pub-upload-error');
+    const errorText = this.modalEl.querySelector('#pub-upload-error-text');
+    const retryBtn = this.modalEl.querySelector('#pub-upload-retry-btn');
+
+    if (errorText) errorText.textContent = message;
+    if (retryBtn) retryBtn.style.display = canRetry ? 'inline-block' : 'none';
+    if (errorBox) errorBox.style.display = 'flex';
+  }
+
+  clearDropzoneError() {
+    const errorBox = this.modalEl.querySelector('#pub-upload-error');
+    const retryBtn = this.modalEl.querySelector('#pub-upload-retry-btn');
+    if (errorBox) errorBox.style.display = 'none';
+    if (retryBtn) retryBtn.style.display = 'none';
   }
 
   open(existingArticle = null) {
@@ -253,6 +635,11 @@ export class PublishModalComponent {
     this.modalEl.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
 
+    // Reset dropzone to default state
+    this.resetDropzoneDefault();
+    this.clearDropzoneError();
+    this.lastSelectedFile = null;
+
     // Populate form if editing
     if (existingArticle) {
       this.editingArticleId = existingArticle.id;
@@ -263,11 +650,26 @@ export class PublishModalComponent {
       this.modalEl.querySelector('#pub-content').value = existingArticle.content || '';
       this.modalEl.querySelector('#pub-custom-image-url').value = existingArticle.image || '';
       this.modalEl.querySelector('#pub-image-preview').src = existingArticle.image || '';
+      this.selectedImageUrl = existingArticle.image || this.presetImages[0].url;
+
+      const previewTag = this.modalEl.querySelector('#pub-preview-tag');
+      if (previewTag) previewTag.textContent = 'Existing Article Photo';
+
       if (existingArticle.keyPoints) {
         this.modalEl.querySelector('#pub-keypoints').value = existingArticle.keyPoints.join('\n');
       }
     } else {
       this.editingArticleId = null;
+      this.selectedImageUrl = this.presetImages[0].url;
+      const customUrlInput = this.modalEl.querySelector('#pub-custom-image-url');
+      if (customUrlInput) customUrlInput.value = this.presetImages[0].url;
+      const previewImg = this.modalEl.querySelector('#pub-image-preview');
+      if (previewImg) previewImg.src = this.presetImages[0].url;
+      const previewTag = this.modalEl.querySelector('#pub-preview-tag');
+      if (previewTag) previewTag.textContent = 'Preset Photo';
+
+      const presetBtns = this.modalEl.querySelectorAll('.preset-photo-btn');
+      presetBtns.forEach((b, idx) => b.classList.toggle('active', idx === 0));
     }
   }
 
@@ -277,11 +679,23 @@ export class PublishModalComponent {
     this.modalEl.classList.remove('active');
     this.modalEl.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
+
+    if (this.currentPreviewBlobUrl) {
+      URL.revokeObjectURL(this.currentPreviewBlobUrl);
+      this.currentPreviewBlobUrl = null;
+    }
+    this.resetDropzoneDefault();
+    this.clearDropzoneError();
   }
 
   handleSubmit() {
     if (!firebaseService.isAdmin()) {
       alert('Access Restricted: Only the administrator can write and publish articles.');
+      return;
+    }
+
+    if (this.isUploadingImage) {
+      alert('Please wait for the photojournalist image upload to finish before publishing.');
       return;
     }
 
@@ -320,6 +734,11 @@ export class PublishModalComponent {
     };
 
     cacheService.saveCustomArticle(articleObj);
+
+    if (this.currentPreviewBlobUrl) {
+      URL.revokeObjectURL(this.currentPreviewBlobUrl);
+      this.currentPreviewBlobUrl = null;
+    }
 
     this.close();
 
