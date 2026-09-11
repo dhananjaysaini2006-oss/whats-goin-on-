@@ -2,6 +2,39 @@ import { cacheService } from '../services/cacheService.js';
 import { CATEGORIES } from '../config/sources.js';
 import { firebaseService } from '../services/firebaseService.js';
 
+/**
+ * Fast client-side image compression & Data URL generator.
+ * Guarantees photos can always be saved into articles immediately,
+ * even if Firebase Cloud Storage is unprovisioned, timing out, or offline.
+ */
+function optimizeImageToDataUrl(file, maxWidth = 1280, quality = 0.85) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = () => resolve(e.target.result);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+
 export class PublishModalComponent {
   constructor(onArticlePublishedCallback) {
     this.onArticlePublishedCallback = onArticlePublishedCallback;
@@ -159,7 +192,7 @@ export class PublishModalComponent {
                   <span class="publish-dropzone-browse">browse files</span>
                 </div>
                 <div class="publish-dropzone-sub">
-                  Supports JPG, JPEG, PNG, WEBP &bull; Max 5MB &bull; Uploads to Firebase Storage
+                  Supports JPG, JPEG, PNG, WEBP &bull; Max 5MB &bull; Cloud &amp; Local Auto-Sync
                 </div>
               </div>
 
@@ -167,10 +200,10 @@ export class PublishModalComponent {
               <div id="pub-dropzone-uploading" class="publish-dropzone-status" style="display: none;">
                 <div class="publish-dropzone-status-text">
                   <div class="publish-dropzone-spinner"></div>
-                  <span id="pub-upload-progress-text">Uploading to Firebase Storage... 0%</span>
+                  <span id="pub-upload-progress-text">Processing photo...</span>
                 </div>
                 <div class="publish-dropzone-progress-bar">
-                  <div id="pub-upload-progress-fill" class="publish-dropzone-progress-fill" style="width: 0%;"></div>
+                  <div id="pub-upload-progress-fill" class="publish-dropzone-progress-fill" style="width: 25%;"></div>
                 </div>
                 <span id="pub-upload-filename" style="font-size: 0.72rem; color: var(--text-muted);"></span>
               </div>
@@ -181,7 +214,7 @@ export class PublishModalComponent {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
-                  <span id="pub-success-filename">Uploaded to Firebase Storage</span>
+                  <span id="pub-success-filename">Photo Ready to Publish</span>
                 </div>
                 <div class="publish-dropzone-replace-hint">Click or drag a new photo to replace</div>
               </div>
@@ -200,6 +233,16 @@ export class PublishModalComponent {
               <button type="button" id="pub-upload-retry-btn" class="publish-dropzone-btn-retry" style="display: none;">
                 Retry
               </button>
+            </div>
+
+            <!-- Inline Informative Notice Box -->
+            <div id="pub-upload-notice" class="publish-dropzone-notice" style="display: none;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; color: var(--hindu-navy);">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span id="pub-upload-notice-text"></span>
             </div>
 
             <!-- Manual URL Fallback Field -->
@@ -479,7 +522,8 @@ export class PublishModalComponent {
   async uploadFileToFirebase(file) {
     this.isUploadingImage = true;
     this.clearDropzoneError();
-    this.setDropzoneUploadingState(file, 0);
+    this.clearDropzoneNotice();
+    this.setDropzoneUploadingState(file, 20);
 
     const submitBtn = this.modalEl.querySelector('#btn-submit-publish');
     const originalSubmitHtml = submitBtn ? submitBtn.innerHTML : '';
@@ -489,38 +533,73 @@ export class PublishModalComponent {
       submitBtn.style.cursor = 'not-allowed';
       submitBtn.innerHTML = `
         <div class="publish-dropzone-spinner" style="border-top-color:#fff; border-color:rgba(255,255,255,0.3);"></div>
-        <span>Uploading Photo...</span>
+        <span>Syncing Photo...</span>
       `;
     }
 
     try {
+      // 1. Attempt uploading to Firebase Storage with progress updates
       const downloadUrl = await firebaseService.uploadArticleImage(file, (progress) => {
-        this.setDropzoneUploadingState(file, progress);
+        this.setDropzoneUploadingState(file, Math.max(progress, 25));
       });
 
-      // Upload Successful!
+      // Upload to Firebase Cloud Succeeded!
       this.isUploadingImage = false;
       this.selectedImageUrl = downloadUrl;
 
-      // Populate existing image URL field so preview and publish logic keep working
       const customUrlInput = this.modalEl.querySelector('#pub-custom-image-url');
       if (customUrlInput) customUrlInput.value = downloadUrl;
 
-      // Update preview to live Firebase Storage download URL
       const previewImg = this.modalEl.querySelector('#pub-image-preview');
       if (previewImg) previewImg.src = downloadUrl;
 
       const previewTag = this.modalEl.querySelector('#pub-preview-tag');
       if (previewTag) previewTag.textContent = 'Firebase Cloud Storage';
 
-      this.setDropzoneSuccessState(file);
+      this.setDropzoneSuccessState(file, 'cloud');
 
     } catch (err) {
-      console.error('[PublishModal] Upload error:', err);
+      console.warn('[PublishModal] Cloud upload unavailable, engaging instant local fallback:', err);
+
+      // 2. Automatic Local Fallback: Convert to high-resolution optimized Data URL
+      // This guarantees the user is NEVER blocked from publishing, even if Firebase Storage bucket
+      // has not been created yet in the Firebase Console!
+      try {
+        const localDataUrl = await optimizeImageToDataUrl(file);
+        if (localDataUrl) {
+          this.isUploadingImage = false;
+          this.selectedImageUrl = localDataUrl;
+
+          const customUrlInput = this.modalEl.querySelector('#pub-custom-image-url');
+          if (customUrlInput) customUrlInput.value = localDataUrl.slice(0, 80) + '... [Embedded Image Data]';
+
+          const previewImg = this.modalEl.querySelector('#pub-image-preview');
+          if (previewImg) previewImg.src = localDataUrl;
+
+          const previewTag = this.modalEl.querySelector('#pub-preview-tag');
+          if (previewTag) previewTag.textContent = 'Local High-Res (Ready to Publish)';
+
+          this.setDropzoneSuccessState(file, 'local');
+
+          let reason = 'Firebase Storage bucket not yet activated in Firebase Console';
+          if (err.code === 'storage/unauthorized') {
+            reason = 'Storage rules not published in Firebase Console';
+          } else if (err.message?.includes('timed out')) {
+            reason = 'Cloud storage connection timed out';
+          }
+          this.showDropzoneNotice(
+            `Photo saved locally and ready to publish! (${reason} — your story will publish immediately with this photo).`
+          );
+          return;
+        }
+      } catch (fallbackErr) {
+        console.error('[PublishModal] Local fallback also failed:', fallbackErr);
+      }
+
       this.isUploadingImage = false;
       this.resetDropzoneDefault();
 
-      let errorMsg = 'Upload failed. Please check connection and retry.';
+      let errorMsg = 'Upload failed. You can paste an image URL directly or retry.';
       if (err.code === 'storage/unauthorized') {
         errorMsg = 'Upload rejected by Firebase Storage rules. Ensure write access is granted for article-images/.';
       } else if (err.code === 'storage/quota-exceeded') {
@@ -557,14 +636,14 @@ export class PublishModalComponent {
     if (uploadingView) uploadingView.style.display = 'flex';
 
     if (progressFill) progressFill.style.width = `${progress}%`;
-    if (progressText) progressText.textContent = `Uploading to Firebase Storage... ${progress}%`;
+    if (progressText) progressText.textContent = `Processing image... ${progress}%`;
     if (filenameLabel) {
       const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
       filenameLabel.textContent = `${file.name} (${sizeMB} MB)`;
     }
   }
 
-  setDropzoneSuccessState(file) {
+  setDropzoneSuccessState(file, mode = 'cloud') {
     const defaultView = this.modalEl.querySelector('#pub-dropzone-content');
     const uploadingView = this.modalEl.querySelector('#pub-dropzone-uploading');
     const successView = this.modalEl.querySelector('#pub-dropzone-success');
@@ -576,7 +655,11 @@ export class PublishModalComponent {
 
     if (successFilename) {
       const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-      successFilename.textContent = `✓ Uploaded: ${file.name} (${sizeMB} MB)`;
+      if (mode === 'cloud') {
+        successFilename.textContent = `✓ Uploaded to Cloud: ${file.name} (${sizeMB} MB)`;
+      } else {
+        successFilename.textContent = `✓ Photo Ready to Publish: ${file.name} (${sizeMB} MB)`;
+      }
     }
   }
 
@@ -593,6 +676,19 @@ export class PublishModalComponent {
     if (fileInput) fileInput.value = '';
     if (dropzone) dropzone.classList.remove('is-dragover');
     this.dragCounter = 0;
+    this.clearDropzoneNotice();
+  }
+
+  showDropzoneNotice(message) {
+    const noticeBox = this.modalEl.querySelector('#pub-upload-notice');
+    const noticeText = this.modalEl.querySelector('#pub-upload-notice-text');
+    if (noticeText) noticeText.textContent = message;
+    if (noticeBox) noticeBox.style.display = 'flex';
+  }
+
+  clearDropzoneNotice() {
+    const noticeBox = this.modalEl.querySelector('#pub-upload-notice');
+    if (noticeBox) noticeBox.style.display = 'none';
   }
 
   showDropzoneError(message, canRetry = false) {

@@ -89,6 +89,12 @@ class FirebaseService {
       this.firebaseApp = !getApps().length ? initializeApp(FIREBASE_CONFIG) : getApp();
     }
     this.firebaseStorage = getStorage(this.firebaseApp);
+    // Crucial: Set maxUploadRetryTime to 4000ms so failed/unprovisioned buckets don't hang for 10 minutes
+    try {
+      this.firebaseStorage.maxUploadRetryTime = 4000;
+      this.firebaseStorage.maxOperationRetryTime = 4000;
+    } catch (e) {}
+
     return this.firebaseStorage;
   }
 
@@ -118,7 +124,7 @@ class FirebaseService {
 
     const uploadTask = uploadBytesResumable(storageRef, file, metadata);
 
-    return new Promise((resolve, reject) => {
+    const uploadPromise = new Promise((resolve, reject) => {
       uploadTask.on(
         'state_changed',
         (snapshot) => {
@@ -143,6 +149,16 @@ class FirebaseService {
         }
       );
     });
+
+    // Enforce 6-second timeout race to prevent indefinite spinning
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        try { uploadTask.cancel(); } catch (e) {}
+        reject(new Error('Firebase Storage request timed out after 6 seconds.'));
+      }, 6000);
+    });
+
+    return Promise.race([uploadPromise, timeoutPromise]);
   }
 
   loadSavedSession() {
